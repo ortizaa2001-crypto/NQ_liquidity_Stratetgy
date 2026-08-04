@@ -785,3 +785,121 @@ bearScore += bearDisplacement ? 20 : 0
 bearScore += bearMSS ? 20 : 0
 bearScore += bearFVG ? 15 : 0
 bearScore += bias == Bias.Bearish ? 10 : 0
+//=========================================================
+// MODULE 05A
+// TRADE QUALIFICATION
+//=========================================================
+
+groupTrade = "Trade Engine"
+
+minimumScore =
+    input.int(
+        70,
+        "Minimum Trade Score",
+        minval = 0,
+        maxval = 100,
+        group = groupTrade)
+
+allowCounterTrend =
+    input.bool(
+        false,
+        "Allow Counter Trend",
+        group = groupTrade)
+
+bullQualified =
+     bullScore >= minimumScore and
+     bullMSS and
+     bullRetrace
+
+bearQualified =
+     bearScore >= minimumScore and
+     bearMSS and
+     bearRetrace
+
+if not allowCounterTrend
+    bullQualified := bullQualified and bias == Bias.Bullish
+    bearQualified := bearQualified and bias == Bias.Bearish
+//=========================================================
+// MODULE 05B
+// RISK ENGINE
+//=========================================================
+
+longStop =
+     math.min(
+         previousDayLow,
+         nz(lastSwingLow, low)) -
+     atr * atrMult
+
+shortStop =
+     math.max(
+         previousDayHigh,
+         nz(lastSwingHigh, high)) +
+     atr * atrMult
+
+longRisk =
+     close - longStop
+
+shortRisk =
+     shortStop - close
+
+longTarget =
+     close + (longRisk * 3.0)
+
+shortTarget =
+     close - (shortRisk * 3.0)
+//=========================================================
+// MODULE 05C
+// ENTRIES
+//=========================================================
+
+longEntry =
+     bullQualified and
+     strategy.position_size <= 0
+
+shortEntry =
+     bearQualified and
+     strategy.position_size >= 0
+
+if longEntry
+
+    strategy.entry(
+         "Long",
+         strategy.long)
+
+    strategy.exit(
+         "Long Exit",
+         "Long",
+         stop = longStop,
+         limit = longTarget)
+
+if shortEntry
+
+    strategy.entry(
+         "Short",
+         strategy.short)
+
+    strategy.exit(
+         "Short Exit",
+         "Short",
+         stop = shortStop,
+         limit = shortTarget)
+//=========================================================
+// MODULE 05D
+// SIGNALS
+//=========================================================
+
+plotshape(
+     longEntry,
+     style=shape.arrowup,
+     color=color.lime,
+     location=location.belowbar,
+     size=size.normal,
+     title="BUY")
+
+plotshape(
+     shortEntry,
+     style=shape.arrowdown,
+     color=color.red,
+     location=location.abovebar,
+     size=size.normal,
+     title="SELL")
