@@ -93,3 +93,77 @@ bullTrend = close > ema
 bearTrend = close < ema
 
 plot(ema, color=color.orange, linewidth=2, title="EMA")
+//======================================================
+// SESSION ENGINE
+//======================================================
+
+// Returns true while the bar is inside the session
+inAsia = not na(time(timeframe.period, asiaSession))
+inLondon = not na(time(timeframe.period, londonSession))
+inNY = not na(time(timeframe.period, nySession))
+
+// Session colors
+asiaColor = color.new(color.blue, 90)
+londonColor = color.new(color.yellow, 88)
+nyColor = color.new(color.green, 88)
+
+// Background coloring
+bgcolor(showBackground and showAsia and inAsia ? asiaColor : na)
+bgcolor(showBackground and showLondon and inLondon ? londonColor : na)
+bgcolor(showBackground and showNY and inNY ? nyColor : na)
+
+// Session start/end detection
+asiaStart = inAsia and not inAsia[1]
+asiaEnd = not inAsia and inAsia[1]
+
+londonStart = inLondon and not inLondon[1]
+londonEnd = not inLondon and inLondon[1]
+
+nyStart = inNY and not inNY[1]
+nyEnd = not inNY and inNY[1]
+
+// Variables
+var float asiaHigh = na
+var float asiaLow = na
+
+var float londonHigh = na
+var float londonLow = na
+
+var float nyHigh = na
+var float nyLow = na
+
+// Reset on new sessions
+if asiaStart
+    asiaHigh := high
+    asiaLow := low
+
+if londonStart
+    londonHigh := high
+    londonLow := low
+
+if nyStart
+    nyHigh := high
+    nyLow := low
+
+// Track ranges
+if inAsia
+    asiaHigh := math.max(asiaHigh, high)
+    asiaLow := math.min(asiaLow, low)
+
+if inLondon
+    londonHigh := math.max(londonHigh, high)
+    londonLow := math.min(londonLow, low)
+
+if inNY
+    nyHigh := math.max(nyHigh, high)
+    nyLow := math.min(nyLow, low)
+
+// Plot session levels
+plot(showAsia ? asiaHigh : na, title="Asia High", color=color.aqua, linewidth=1)
+plot(showAsia ? asiaLow : na, title="Asia Low", color=color.aqua, linewidth=1)
+
+plot(showLondon ? londonHigh : na, title="London High", color=color.orange, linewidth=1)
+plot(showLondon ? londonLow : na, title="London Low", color=color.orange, linewidth=1)
+
+plot(showNY ? nyHigh : na, title="NY High", color=color.lime, linewidth=1)
+plot(showNY ? nyLow : na, title="NY Low", color=color.lime, linewidth=1)
