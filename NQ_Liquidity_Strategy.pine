@@ -289,3 +289,155 @@ plot(showLevels ? nyLow : na,
      "NY Low",
      color=color.green,
      linewidth=2)
+//=========================================================
+// MODULE 02B
+// SWING LIQUIDITY ENGINE
+//=========================================================
+
+// ---------- User Inputs ----------
+
+swingLength = input.int(5, "Swing Length", minval=2, maxval=20, group="Liquidity")
+
+equalTickTolerance = input.float(
+     2.0,
+     "Equal High/Low Tick Tolerance",
+     step=0.25,
+     group="Liquidity")
+
+// ---------- Swing Detection ----------
+
+pivotHigh = ta.pivothigh(high, swingLength, swingLength)
+pivotLow  = ta.pivotlow(low, swingLength, swingLength)
+
+var float lastSwingHigh = na
+var float lastSwingLow  = na
+
+var int lastSwingHighBar = na
+var int lastSwingLowBar = na
+
+if not na(pivotHigh)
+    lastSwingHigh := pivotHigh
+    lastSwingHighBar := bar_index - swingLength
+
+if not na(pivotLow)
+    lastSwingLow := pivotLow
+    lastSwingLowBar := bar_index - swingLength
+
+// ---------- Plot Swings ----------
+
+plot(
+     showLevels ? lastSwingHigh : na,
+     title="Last Swing High",
+     color=color.fuchsia,
+     linewidth=2,
+     style=plot.style_linebr)
+
+plot(
+     showLevels ? lastSwingLow : na,
+     title="Last Swing Low",
+     color=color.fuchsia,
+     linewidth=2,
+     style=plot.style_linebr)
+
+// ---------- Equal High / Low Detection ----------
+
+tickSize = syminfo.mintick
+
+equalTolerance = equalTickTolerance * tickSize
+
+var float equalHigh = na
+var float equalLow = na
+
+if not na(lastSwingHigh) and not na(lastSwingHigh[1])
+    if math.abs(lastSwingHigh - lastSwingHigh[1]) <= equalTolerance
+        equalHigh := lastSwingHigh
+
+if not na(lastSwingLow) and not na(lastSwingLow[1])
+    if math.abs(lastSwingLow - lastSwingLow[1]) <= equalTolerance
+        equalLow := lastSwingLow
+
+plot(
+     showLevels ? equalHigh : na,
+     title="Equal High",
+     color=color.red,
+     linewidth=3)
+
+plot(
+     showLevels ? equalLow : na,
+     title="Equal Low",
+     color=color.lime,
+     linewidth=3)
+
+//=========================================================
+// SWEEP DETECTION
+//=========================================================
+
+sweptPDH = high > previousDayHigh and close < previousDayHigh
+sweptPDL = low < previousDayLow and close > previousDayLow
+
+sweptAsiaHigh = not na(asiaHigh) and high > asiaHigh and close < asiaHigh
+sweptAsiaLow  = not na(asiaLow) and low < asiaLow and close > asiaLow
+
+sweptLondonHigh = not na(londonHigh) and high > londonHigh and close < londonHigh
+sweptLondonLow  = not na(londonLow) and low < londonLow and close > londonLow
+
+sweptNYHigh = not na(nyHigh) and high > nyHigh and close < nyHigh
+sweptNYLow  = not na(nyLow) and low < nyLow and close > nyLow
+
+sweptSwingHigh = not na(lastSwingHigh) and high > lastSwingHigh and close < lastSwingHigh
+sweptSwingLow  = not na(lastSwingLow) and low < lastSwingLow and close > lastSwingLow
+
+//=========================================================
+// SWEEP SCORE
+//=========================================================
+
+bullSweepScore = 0
+bearSweepScore = 0
+
+bullSweepScore += sweptPDL ? 25 : 0
+bullSweepScore += sweptAsiaLow ? 15 : 0
+bullSweepScore += sweptLondonLow ? 15 : 0
+bullSweepScore += sweptNYLow ? 10 : 0
+bullSweepScore += sweptSwingLow ? 10 : 0
+
+bearSweepScore += sweptPDH ? 25 : 0
+bearSweepScore += sweptAsiaHigh ? 15 : 0
+bearSweepScore += sweptLondonHigh ? 15 : 0
+bearSweepScore += sweptNYHigh ? 10 : 0
+bearSweepScore += sweptSwingHigh ? 10 : 0
+
+//=========================================================
+// VISUAL MARKERS
+//=========================================================
+
+plotshape(
+     sweptPDH,
+     title="PDH Sweep",
+     style=shape.triangledown,
+     location=location.abovebar,
+     color=color.red,
+     size=size.small)
+
+plotshape(
+     sweptPDL,
+     title="PDL Sweep",
+     style=shape.triangleup,
+     location=location.belowbar,
+     color=color.lime,
+     size=size.small)
+
+plotshape(
+     sweptSwingHigh,
+     title="Swing High Sweep",
+     style=shape.circle,
+     location=location.abovebar,
+     color=color.red,
+     size=size.tiny)
+
+plotshape(
+     sweptSwingLow,
+     title="Swing Low Sweep",
+     style=shape.circle,
+     location=location.belowbar,
+     color=color.lime,
+     size=size.tiny)
