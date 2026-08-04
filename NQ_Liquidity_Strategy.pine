@@ -1,90 +1,127 @@
 //@version=6
 strategy(
-     title = "NQ Institutional Liquidity Strategy",
-     shorttitle = "NQ ILS",
-     overlay = true,
-     initial_capital = 50000,
-     pyramiding = 0,
-     commission_type = strategy.commission.cash_per_contract,
-     commission_value = 2.50,
-     calc_on_every_tick = true,
-     process_orders_on_close = false,
-     max_labels_count = 500,
-     max_lines_count = 500,
-     max_boxes_count = 500)
+     title="NQ Institutional Liquidity Strategy",
+     shorttitle="NQ ILS",
+     overlay=true,
+     pyramiding=0,
+     initial_capital=50000,
+     commission_type=strategy.commission.cash_per_contract,
+     commission_value=2.50,
+     calc_on_every_tick=true,
+     calc_on_order_fills=true,
+     process_orders_on_close=false,
+     max_labels_count=500,
+     max_lines_count=500,
+     max_boxes_count=500)
 
-//======================================================
+//=========================================================
+// VERSION
+//=========================================================
+
+const string VERSION = "0.1.0"
+
+//=========================================================
 // INPUT GROUPS
-//======================================================
+//=========================================================
 
-groupSessions = "Sessions"
-groupStructure = "Market Structure"
-groupLiquidity = "Liquidity"
-groupRisk = "Risk Management"
-groupFilters = "Filters"
-groupVisual = "Visuals"
+string gSession = "Sessions"
+string gHTF     = "Higher Time Frames"
+string gRisk    = "Risk"
+string gVisual  = "Visual"
+string gFilter  = "Filters"
 
-//======================================================
+//=========================================================
 // SESSION INPUTS
-//======================================================
+//=========================================================
 
-showAsia = input.bool(true, "Show Asia Session", group = groupSessions)
-showLondon = input.bool(true, "Show London Session", group = groupSessions)
-showNY = input.bool(true, "Show New York Session", group = groupSessions)
+showAsia   = input.bool(true, "Show Asia", group=gSession)
+showLondon = input.bool(true, "Show London", group=gSession)
+showNY     = input.bool(true, "Show New York", group=gSession)
 
-asiaSession = input.session("1700-0000", "Asia", group = groupSessions)
-londonSession = input.session("0200-0500", "London", group = groupSessions)
-nySession = input.session("0830-1100", "New York", group = groupSessions)
+asiaSession   = input.session("1700-0000", "Asia Session", group=gSession)
+londonSession = input.session("0200-0500", "London Session", group=gSession)
+nySession     = input.session("0830-1100", "New York Session", group=gSession)
 
-//======================================================
-// MARKET STRUCTURE INPUTS
-//======================================================
+//=========================================================
+// MULTI TIMEFRAME
+//=========================================================
 
-swingLength = input.int(5, "Swing Length", minval = 2, maxval = 20, group = groupStructure)
-bosConfirmation = input.int(2, "BOS Confirmation Bars", minval = 1, maxval = 5, group = groupStructure)
+executionTF = input.timeframe("1", "Execution TF", group=gHTF)
+swingTF     = input.timeframe("5", "Swing TF", group=gHTF)
+biasTF      = input.timeframe("15", "Bias TF", group=gHTF)
+dailyTF     = input.timeframe("D", "Daily Liquidity", group=gHTF)
 
-//======================================================
-// LIQUIDITY INPUTS
-//======================================================
+//=========================================================
+// RISK
+//=========================================================
 
-equalHighTolerance = input.float(2.0, "Equal High Tick Tolerance", step = 0.25, group = groupLiquidity)
-equalLowTolerance = input.float(2.0, "Equal Low Tick Tolerance", step = 0.25, group = groupLiquidity)
+riskPercent = input.float(1.0, "Risk %", step=.25, group=gRisk)
 
-detectFVG = input.bool(true, "Detect Fair Value Gaps", group = groupLiquidity)
-detectOB = input.bool(true, "Detect Order Blocks", group = groupLiquidity)
-detectLiquidity = input.bool(true, "Detect Liquidity Sweeps", group = groupLiquidity)
+atrLength = input.int(14, "ATR Length", group=gRisk)
+atrMult   = input.float(2.0, "ATR Stop", step=.25, group=gRisk)
 
-//======================================================
-// RISK INPUTS
-//======================================================
-
-riskPercent = input.float(1.0, "Risk %", step = 0.25, group = groupRisk)
-
-atrLength = input.int(14, "ATR Length", group = groupRisk)
-atrStop = input.float(2.0, "ATR Stop Multiplier", step = 0.25, group = groupRisk)
-rewardRR = input.float(3.0, "Reward Ratio", step = 0.25, group = groupRisk)
-
-//======================================================
+//=========================================================
 // FILTERS
-//======================================================
+//=========================================================
 
-useEMAFilter = input.bool(true, "EMA Trend Filter", group = groupFilters)
-emaLength = input.int(50, "EMA Length", group = groupFilters)
+emaLength = input.int(50, "EMA Length", group=gFilter)
 
-useATRFilter = input.bool(true, "ATR Volatility Filter", group = groupFilters)
-minimumATR = input.float(15.0, "Minimum ATR", group = groupFilters)
+useEMA = input.bool(true, "Use EMA Filter", group=gFilter)
 
-//======================================================
-// VISUALS
-//======================================================
+//=========================================================
+// VISUAL
+//=========================================================
 
-showLabels = input.bool(true, "Show Labels", group = groupVisual)
-showBackground = input.bool(true, "Color Sessions", group = groupVisual)
-showSignals = input.bool(true, "Show Entry Signals", group = groupVisual)
+showDashboard = input.bool(true, "Dashboard", group=gVisual)
+showLevels    = input.bool(true, "Liquidity Levels", group=gVisual)
+showSignals   = input.bool(true, "Signals", group=gVisual)
 
-//======================================================
+//=========================================================
+// ENUMS
+//=========================================================
+
+enum Bias
+    Bullish
+    Bearish
+    Neutral
+
+enum TradeState
+    Waiting
+    LiquidityFound
+    Swept
+    Displacement
+    MSS
+    FVG
+    Retracement
+    Entered
+    Managing
+
+enum LiquidityType
+    PDH
+    PDL
+    PWH
+    PWL
+    AsiaHigh
+    AsiaLow
+    LondonHigh
+    LondonLow
+    NYHigh
+    NYLow
+    SwingHigh
+    SwingLow
+    EqualHigh
+    EqualLow
+
+//=========================================================
+// GLOBAL STATE
+//=========================================================
+
+var TradeState state = TradeState.Waiting
+var Bias bias = Bias.Neutral
+
+//=========================================================
 // CORE CALCULATIONS
-//======================================================
+//=========================================================
 
 ema = ta.ema(close, emaLength)
 atr = ta.atr(atrLength)
@@ -92,78 +129,72 @@ atr = ta.atr(atrLength)
 bullTrend = close > ema
 bearTrend = close < ema
 
-plot(ema, color=color.orange, linewidth=2, title="EMA")
-//======================================================
-// SESSION ENGINE
-//======================================================
+plot(useEMA ? ema : na, title="EMA", color=color.orange, linewidth=2)
 
-// Returns true while the bar is inside the session
-inAsia = not na(time(timeframe.period, asiaSession))
+//=========================================================
+// SESSION STATUS
+//=========================================================
+
+inAsia   = not na(time(timeframe.period, asiaSession))
 inLondon = not na(time(timeframe.period, londonSession))
-inNY = not na(time(timeframe.period, nySession))
+inNY     = not na(time(timeframe.period, nySession))
 
-// Session colors
-asiaColor = color.new(color.blue, 90)
-londonColor = color.new(color.yellow, 88)
-nyColor = color.new(color.green, 88)
+if showAsia and inAsia
+    bgcolor(color.new(color.blue,92))
 
-// Background coloring
-bgcolor(showBackground and showAsia and inAsia ? asiaColor : na)
-bgcolor(showBackground and showLondon and inLondon ? londonColor : na)
-bgcolor(showBackground and showNY and inNY ? nyColor : na)
+if showLondon and inLondon
+    bgcolor(color.new(color.yellow,92))
 
-// Session start/end detection
-asiaStart = inAsia and not inAsia[1]
-asiaEnd = not inAsia and inAsia[1]
+if showNY and inNY
+    bgcolor(color.new(color.green,92))
 
-londonStart = inLondon and not inLondon[1]
-londonEnd = not inLondon and inLondon[1]
+//=========================================================
+// HIGHER TIMEFRAME DATA
+//=========================================================
 
-nyStart = inNY and not inNY[1]
-nyEnd = not inNY and inNY[1]
+biasClose =
+    request.security(
+        syminfo.tickerid,
+        biasTF,
+        close,
+        lookahead=barmerge.lookahead_off)
 
-// Variables
-var float asiaHigh = na
-var float asiaLow = na
+biasEMA =
+    request.security(
+        syminfo.tickerid,
+        biasTF,
+        ta.ema(close,50),
+        lookahead=barmerge.lookahead_off)
 
-var float londonHigh = na
-var float londonLow = na
+bias :=
+     biasClose > biasEMA ? Bias.Bullish :
+     biasClose < biasEMA ? Bias.Bearish :
+     Bias.Neutral
 
-var float nyHigh = na
-var float nyLow = na
+//=========================================================
+// PREVIOUS DAY LIQUIDITY
+//=========================================================
 
-// Reset on new sessions
-if asiaStart
-    asiaHigh := high
-    asiaLow := low
+previousDayHigh =
+    request.security(
+        syminfo.tickerid,
+        dailyTF,
+        high[1],
+        lookahead=barmerge.lookahead_off)
 
-if londonStart
-    londonHigh := high
-    londonLow := low
+previousDayLow =
+    request.security(
+        syminfo.tickerid,
+        dailyTF,
+        low[1],
+        lookahead=barmerge.lookahead_off)
 
-if nyStart
-    nyHigh := high
-    nyLow := low
+plot(showLevels ? previousDayHigh : na,
+     "PDH",
+     color=color.lime,
+     linewidth=2)
 
-// Track ranges
-if inAsia
-    asiaHigh := math.max(asiaHigh, high)
-    asiaLow := math.min(asiaLow, low)
-
-if inLondon
-    londonHigh := math.max(londonHigh, high)
-    londonLow := math.min(londonLow, low)
-
-if inNY
-    nyHigh := math.max(nyHigh, high)
-    nyLow := math.min(nyLow, low)
-
-// Plot session levels
-plot(showAsia ? asiaHigh : na, title="Asia High", color=color.aqua, linewidth=1)
-plot(showAsia ? asiaLow : na, title="Asia Low", color=color.aqua, linewidth=1)
-
-plot(showLondon ? londonHigh : na, title="London High", color=color.orange, linewidth=1)
-plot(showLondon ? londonLow : na, title="London Low", color=color.orange, linewidth=1)
-
-plot(showNY ? nyHigh : na, title="NY High", color=color.lime, linewidth=1)
-plot(showNY ? nyLow : na, title="NY Low", color=color.lime, linewidth=1)
+plot(showLevels ? previousDayLow : na,
+     "PDL",
+     color=color.red,
+     linewidth=2)
