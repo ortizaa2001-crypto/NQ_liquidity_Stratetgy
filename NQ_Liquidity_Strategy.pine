@@ -521,6 +521,44 @@ plot(
      color=color.white,
      linewidth=2)
 //=========================================================
+// MODULE 03B
+// BOS / MSS DETECTION
+//=========================================================
+
+bullBOS =
+     not na(internalSwingHigh) and
+     close > internalSwingHigh
+
+bearBOS =
+     not na(internalSwingLow) and
+     close < internalSwingLow
+
+bullMSS =
+     sweptSwingLow and
+     bullBOS
+
+bearMSS =
+     sweptSwingHigh and
+     bearBOS
+
+plotshape(
+     bullMSS,
+     title="Bull MSS",
+     style=shape.labelup,
+     text="MSS",
+     location=location.belowbar,
+     color=color.lime,
+     textcolor=color.black)
+
+plotshape(
+     bearMSS,
+     title="Bear MSS",
+     style=shape.labeldown,
+     text="MSS",
+     location=location.abovebar,
+     color=color.red,
+     textcolor=color.white)
+//=========================================================
 // MODULE 03C
 // DISPLACEMENT ENGINE
 //=========================================================
@@ -590,6 +628,37 @@ plotshape(
      color=color.red,
      location=location.abovebar,
      size=size.tiny)
+bullMSS =
+     sweptSwingLow and
+     bullDisplacement and
+     bullBOS
+
+bearMSS =
+     sweptSwingHigh and
+     bearDisplacement and
+     bearBOS
+//=========================================================
+// MODULE 03E
+// STATE MACHINE
+//=========================================================
+
+if state == TradeState.Waiting
+
+    if sweptSwingLow or sweptPDL or sweptAsiaLow or sweptLondonLow or sweptNYLow
+        state := TradeState.Swept
+
+    if sweptSwingHigh or sweptPDH or sweptAsiaHigh or sweptLondonHigh or sweptNYHigh
+        state := TradeState.Swept
+
+if state == TradeState.Swept
+
+    if bullDisplacement or bearDisplacement
+        state := TradeState.Displacement
+
+if state == TradeState.Displacement
+
+    if bullMSS or bearMSS
+        state := TradeState.MSS
 //=========================================================
 // MODULE 04A
 // FAIR VALUE GAP ENGINE
@@ -661,3 +730,58 @@ if bearFVG
          bottom = bearFVGBottom,
          bgcolor = color.new(color.red,85),
          border_color = color.red)
+//=========================================================
+// FVG RETRACEMENT
+//=========================================================
+
+bullRetrace =
+     bullFVG and
+     low <= bullFVGTop and
+     low >= bullFVGBottom
+
+bearRetrace =
+     bearFVG and
+     high >= bearFVGBottom and
+     high <= bearFVGTop
+
+plotshape(
+     bullRetrace,
+     title="Bull FVG Retest",
+     style=shape.diamond,
+     color=color.lime,
+     location=location.belowbar,
+     size=size.small)
+
+plotshape(
+     bearRetrace,
+     title="Bear FVG Retest",
+     style=shape.diamond,
+     color=color.red,
+     location=location.abovebar,
+     size=size.small)
+//=========================================================
+// ENTRY SCORE
+//=========================================================
+
+bullScore = 0
+bearScore = 0
+
+bullScore += sweptPDL ? 25 : 0
+bullScore += sweptAsiaLow ? 15 : 0
+bullScore += sweptLondonLow ? 15 : 0
+bullScore += sweptNYLow ? 10 : 0
+
+bullScore += bullDisplacement ? 20 : 0
+bullScore += bullMSS ? 20 : 0
+bullScore += bullFVG ? 15 : 0
+bullScore += bias == Bias.Bullish ? 10 : 0
+
+bearScore += sweptPDH ? 25 : 0
+bearScore += sweptAsiaHigh ? 15 : 0
+bearScore += sweptLondonHigh ? 15 : 0
+bearScore += sweptNYHigh ? 10 : 0
+
+bearScore += bearDisplacement ? 20 : 0
+bearScore += bearMSS ? 20 : 0
+bearScore += bearFVG ? 15 : 0
+bearScore += bias == Bias.Bearish ? 10 : 0
