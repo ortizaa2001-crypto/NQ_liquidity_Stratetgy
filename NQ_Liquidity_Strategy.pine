@@ -441,3 +441,82 @@ plotshape(
      location=location.belowbar,
      color=color.lime,
      size=size.tiny)
+//=========================================================
+// MODULE 03A
+// MARKET STRUCTURE ENGINE
+//=========================================================
+
+//---------------------------------------------------------
+// Internal Structure (1 Minute)
+//---------------------------------------------------------
+
+internalLength = input.int(
+     3,
+     "Internal Swing Length",
+     minval = 2,
+     maxval = 10,
+     group = "Structure")
+
+internalHigh =
+     ta.pivothigh(
+         high,
+         internalLength,
+         internalLength)
+
+internalLow =
+     ta.pivotlow(
+         low,
+         internalLength,
+         internalLength)
+
+var float internalSwingHigh = na
+var float internalSwingLow = na
+
+if not na(internalHigh)
+    internalSwingHigh := internalHigh
+
+if not na(internalLow)
+    internalSwingLow := internalLow
+
+//---------------------------------------------------------
+// Higher Structure (5 Minute)
+//---------------------------------------------------------
+
+htfSwingHigh =
+    request.security(
+        syminfo.tickerid,
+        swingTF,
+        ta.pivothigh(high,5,5),
+        lookahead=barmerge.lookahead_off)
+
+htfSwingLow =
+    request.security(
+        syminfo.tickerid,
+        swingTF,
+        ta.pivotlow(low,5,5),
+        lookahead=barmerge.lookahead_off)
+
+var float majorSwingHigh = na
+var float majorSwingLow = na
+
+if not na(htfSwingHigh)
+    majorSwingHigh := htfSwingHigh
+
+if not na(htfSwingLow)
+    majorSwingLow := htfSwingLow
+
+//---------------------------------------------------------
+// Plot Structure
+//---------------------------------------------------------
+
+plot(
+     showLevels ? majorSwingHigh : na,
+     "Major Swing High",
+     color=color.white,
+     linewidth=2)
+
+plot(
+     showLevels ? majorSwingLow : na,
+     "Major Swing Low",
+     color=color.white,
+     linewidth=2)
