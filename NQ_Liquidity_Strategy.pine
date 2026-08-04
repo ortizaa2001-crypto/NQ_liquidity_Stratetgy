@@ -590,3 +590,74 @@ plotshape(
      color=color.red,
      location=location.abovebar,
      size=size.tiny)
+//=========================================================
+// MODULE 04A
+// FAIR VALUE GAP ENGINE
+//=========================================================
+
+groupFVG = "Fair Value Gaps"
+
+enableFVG =
+    input.bool(
+        true,
+        "Enable FVG Filter",
+        group = groupFVG)
+
+minimumGapTicks =
+    input.int(
+        8,
+        "Minimum Gap (Ticks)",
+        minval = 1,
+        group = groupFVG)
+
+tickValue = syminfo.mintick
+
+minimumGap =
+    minimumGapTicks * tickValue
+
+//---------------------------------------------------------
+// Bullish FVG
+//---------------------------------------------------------
+
+bullFVG =
+     low > high[2] and
+     (low - high[2]) >= minimumGap
+
+bullFVGTop = low
+bullFVGBottom = high[2]
+
+//---------------------------------------------------------
+// Bearish FVG
+//---------------------------------------------------------
+
+bearFVG =
+     high < low[2] and
+     (low[2] - high) >= minimumGap
+
+bearFVGTop = low[2]
+bearFVGBottom = high
+
+//---------------------------------------------------------
+// Draw FVG
+//---------------------------------------------------------
+
+var box bullBox = na
+var box bearBox = na
+
+if bullFVG
+    bullBox := box.new(
+         left = bar_index-2,
+         top = bullFVGTop,
+         right = bar_index+25,
+         bottom = bullFVGBottom,
+         bgcolor = color.new(color.lime,85),
+         border_color = color.lime)
+
+if bearFVG
+    bearBox := box.new(
+         left = bar_index-2,
+         top = bearFVGTop,
+         right = bar_index+25,
+         bottom = bearFVGBottom,
+         bgcolor = color.new(color.red,85),
+         border_color = color.red)
