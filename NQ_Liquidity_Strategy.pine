@@ -520,3 +520,73 @@ plot(
      "Major Swing Low",
      color=color.white,
      linewidth=2)
+//=========================================================
+// MODULE 03C
+// DISPLACEMENT ENGINE
+//=========================================================
+
+groupDisplacement = "Displacement"
+
+displacementATRMult =
+    input.float(
+        1.20,
+        "Minimum ATR Multiple",
+        step = 0.05,
+        group = groupDisplacement)
+
+bodyPercentRequired =
+    input.float(
+        65.0,
+        "Minimum Body %",
+        step = 5,
+        group = groupDisplacement)
+
+//---------------------------------------------------------
+// Candle Measurements
+//---------------------------------------------------------
+
+candleRange = high - low
+
+bodySize = math.abs(close - open)
+
+bodyPercent =
+    candleRange > 0
+        ? bodySize / candleRange * 100
+        : 0
+
+bullBody = close > open
+bearBody = close < open
+
+//---------------------------------------------------------
+// Displacement
+//---------------------------------------------------------
+
+bullDisplacement =
+     bullBody and
+     bodyPercent >= bodyPercentRequired and
+     bodySize >= atr * displacementATRMult
+
+bearDisplacement =
+     bearBody and
+     bodyPercent >= bodyPercentRequired and
+     bodySize >= atr * displacementATRMult
+
+//---------------------------------------------------------
+// Plot
+//---------------------------------------------------------
+
+plotshape(
+     bullDisplacement,
+     title="Bull Displacement",
+     style=shape.square,
+     color=color.lime,
+     location=location.belowbar,
+     size=size.tiny)
+
+plotshape(
+     bearDisplacement,
+     title="Bear Displacement",
+     style=shape.square,
+     color=color.red,
+     location=location.abovebar,
+     size=size.tiny)
