@@ -1,1 +1,95 @@
+//@version=6
+strategy(
+     title = "NQ Institutional Liquidity Strategy",
+     shorttitle = "NQ ILS",
+     overlay = true,
+     initial_capital = 50000,
+     pyramiding = 0,
+     commission_type = strategy.commission.cash_per_contract,
+     commission_value = 2.50,
+     calc_on_every_tick = true,
+     process_orders_on_close = false,
+     max_labels_count = 500,
+     max_lines_count = 500,
+     max_boxes_count = 500)
 
+//======================================================
+// INPUT GROUPS
+//======================================================
+
+groupSessions = "Sessions"
+groupStructure = "Market Structure"
+groupLiquidity = "Liquidity"
+groupRisk = "Risk Management"
+groupFilters = "Filters"
+groupVisual = "Visuals"
+
+//======================================================
+// SESSION INPUTS
+//======================================================
+
+showAsia = input.bool(true, "Show Asia Session", group = groupSessions)
+showLondon = input.bool(true, "Show London Session", group = groupSessions)
+showNY = input.bool(true, "Show New York Session", group = groupSessions)
+
+asiaSession = input.session("1700-0000", "Asia", group = groupSessions)
+londonSession = input.session("0200-0500", "London", group = groupSessions)
+nySession = input.session("0830-1100", "New York", group = groupSessions)
+
+//======================================================
+// MARKET STRUCTURE INPUTS
+//======================================================
+
+swingLength = input.int(5, "Swing Length", minval = 2, maxval = 20, group = groupStructure)
+bosConfirmation = input.int(2, "BOS Confirmation Bars", minval = 1, maxval = 5, group = groupStructure)
+
+//======================================================
+// LIQUIDITY INPUTS
+//======================================================
+
+equalHighTolerance = input.float(2.0, "Equal High Tick Tolerance", step = 0.25, group = groupLiquidity)
+equalLowTolerance = input.float(2.0, "Equal Low Tick Tolerance", step = 0.25, group = groupLiquidity)
+
+detectFVG = input.bool(true, "Detect Fair Value Gaps", group = groupLiquidity)
+detectOB = input.bool(true, "Detect Order Blocks", group = groupLiquidity)
+detectLiquidity = input.bool(true, "Detect Liquidity Sweeps", group = groupLiquidity)
+
+//======================================================
+// RISK INPUTS
+//======================================================
+
+riskPercent = input.float(1.0, "Risk %", step = 0.25, group = groupRisk)
+
+atrLength = input.int(14, "ATR Length", group = groupRisk)
+atrStop = input.float(2.0, "ATR Stop Multiplier", step = 0.25, group = groupRisk)
+rewardRR = input.float(3.0, "Reward Ratio", step = 0.25, group = groupRisk)
+
+//======================================================
+// FILTERS
+//======================================================
+
+useEMAFilter = input.bool(true, "EMA Trend Filter", group = groupFilters)
+emaLength = input.int(50, "EMA Length", group = groupFilters)
+
+useATRFilter = input.bool(true, "ATR Volatility Filter", group = groupFilters)
+minimumATR = input.float(15.0, "Minimum ATR", group = groupFilters)
+
+//======================================================
+// VISUALS
+//======================================================
+
+showLabels = input.bool(true, "Show Labels", group = groupVisual)
+showBackground = input.bool(true, "Color Sessions", group = groupVisual)
+showSignals = input.bool(true, "Show Entry Signals", group = groupVisual)
+
+//======================================================
+// CORE CALCULATIONS
+//======================================================
+
+ema = ta.ema(close, emaLength)
+atr = ta.atr(atrLength)
+
+bullTrend = close > ema
+bearTrend = close < ema
+
+plot(ema, color=color.orange, linewidth=2, title="EMA")
