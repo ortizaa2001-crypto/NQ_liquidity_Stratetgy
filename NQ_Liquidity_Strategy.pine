@@ -198,3 +198,94 @@ plot(showLevels ? previousDayLow : na,
      "PDL",
      color=color.red,
      linewidth=2)
+//=========================================================
+// LIQUIDITY ENGINE
+// MODULE 02A
+//=========================================================
+
+//-------------------------
+// Session Start Detection
+//-------------------------
+
+asiaStart   = inAsia and not inAsia[1]
+londonStart = inLondon and not inLondon[1]
+nyStart     = inNY and not inNY[1]
+
+//-------------------------
+// Session Variables
+//-------------------------
+
+var float asiaHigh = na
+var float asiaLow  = na
+
+var float londonHigh = na
+var float londonLow  = na
+
+var float nyHigh = na
+var float nyLow  = na
+
+//-------------------------
+// Reset Session Ranges
+//-------------------------
+
+if asiaStart
+    asiaHigh := high
+    asiaLow := low
+
+if londonStart
+    londonHigh := high
+    londonLow := low
+
+if nyStart
+    nyHigh := high
+    nyLow := low
+
+//-------------------------
+// Track Session High/Low
+//-------------------------
+
+if inAsia
+    asiaHigh := math.max(nz(asiaHigh, high), high)
+    asiaLow := math.min(nz(asiaLow, low), low)
+
+if inLondon
+    londonHigh := math.max(nz(londonHigh, high), high)
+    londonLow := math.min(nz(londonLow, low), low)
+
+if inNY
+    nyHigh := math.max(nz(nyHigh, high), high)
+    nyLow := math.min(nz(nyLow, low), low)
+
+//-------------------------
+// Plot Liquidity
+//-------------------------
+
+plot(showLevels ? asiaHigh : na,
+     "Asia High",
+     color=color.aqua,
+     linewidth=2)
+
+plot(showLevels ? asiaLow : na,
+     "Asia Low",
+     color=color.aqua,
+     linewidth=2)
+
+plot(showLevels ? londonHigh : na,
+     "London High",
+     color=color.orange,
+     linewidth=2)
+
+plot(showLevels ? londonLow : na,
+     "London Low",
+     color=color.orange,
+     linewidth=2)
+
+plot(showLevels ? nyHigh : na,
+     "NY High",
+     color=color.green,
+     linewidth=2)
+
+plot(showLevels ? nyLow : na,
+     "NY Low",
+     color=color.green,
+     linewidth=2)
